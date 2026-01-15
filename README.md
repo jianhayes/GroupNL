@@ -1,4 +1,4 @@
-# GroupNL
+# GroupNL: Low-Resource and Robust CNN Design over Cloud and Device
 GroupNL: Low-Resource and Robust CNN Design over Cloud and Device [IEEE TMC 2026]
 
 Source code will be released later.
