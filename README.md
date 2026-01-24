@@ -2,29 +2,31 @@
 GroupNL: Low-Resource and Robust CNN Design over Cloud and Device [IEEE TMC 2026]
 
 ## Overview
-Compared with [Ghost Conv](https://arxiv.org/abs/1911.11907) and [Seed Feature Maps-based (SineFM) Conv](http://hal.cse.msu.edu/papers/seed-feature-map-leo-satellite-remote-sensing/), the proposed **GroupNL Conv** generates partial feature maps without using extra cheap Conv and BN, which only uses a seed Conv with the data-agnostic and hyperparameters-fixed *Nonlinear Transformation Functions (NLFs)* (i.e., Sinusoidal func) and some lightweight *Tensor Manipulation Operators* like torch.cat, torch.split, and torch.repeat.
+Compared with [Ghost Conv](https://arxiv.org/abs/1911.11907) and [Seed Feature Maps-based (SineFM) Conv](http://hal.cse.msu.edu/papers/seed-feature-map-leo-satellite-remote-sensing/), the proposed **GroupNL Conv** generates partial feature maps without using extra cheap Conv and BatchNorm, which only uses a seed Conv with the data-agnostic and hyperparameters-fixed *Nonlinear Transformation Functions (NLFs)* (i.e., Sinusoidal func) and some lightweight *Tensor Manipulation Operators* like torch.cat, torch.split, and torch.repeat.
 
 GroupNL Conv and GroupNL Conv (Sparse) can serve as the **robust alternatives** of standard Conv and depthwise Conv in [Corrupted data](https://github.com/hendrycks/robustness), respectively.<br>
 GroupNL Conv and GroupNL Conv (Sparse) also achieves a **comparable performance** to Standard Conv and depthwise Conv on standard datasets (e.g., ImageNet-1K) while consuming **fewer on-device resources** (see [our paper in IEEE TMC](https://doi.org/10.1109/TMC.2026.3655770)).
 
 ![image](groupnl_conv_example.png)
 
-## Comparison with Standard Convs
+## Comparison with Baseline Convolutions
 
 |Method | nn.Module| #Ops | #FLOPs |
 |------------------|----------------------|------|--------|
 |Standard Conv      |Conv($n$, $m$, $k$, 1)    | 1 | $whmnk^2$|
 |[Mono Conv](https://github.com/evoxlos/mono-cnn-pytorch)      |<font color="blue">Conv($n$, $m$, $k$, 1)</font>     |1 | $whmnk^2$|
 |[Ghost Conv](https://arxiv.org/abs/1911.11907)        |<font color="blue">Conv($n$, $\frac{m}{r}$, $k$, 1)</font>, <font color="red">Conv($\frac{m}{r}$, $\frac{m(r-1)}{r}$, $d$, $\frac{m}{r}$)</font>    | 2 |$wh\frac{m}{r}(nk^2+(r−1)d^2)$ |
-|[SineFM Conv](http://hal.cse.msu.edu/papers/seed-feature-map-leo-satellite-remote-sensing/)           |<font color="blue">Conv($n$, $\frac{m}{r}$, $k$, 1)</font>, <font color="red">Conv($\frac{tm}{r}$, $\frac{m(r-1)}{r}$, 1, $\frac{m}{r}$)</font>, <font color="orange">BN($\frac{m}{r}$) $\times t$</font>|2+t|$wh\frac{m}{r}(nk^2+t(r+1))$|
-|GroupNL Conv   |<font color="blue">Conv($n$, $\frac{m}{r}$, $k$, 1)</font>     |1|$wh\frac{m}{r}nk^2$ |
+|[SineFM Conv](http://hal.cse.msu.edu/papers/seed-feature-map-leo-satellite-remote-sensing/)           |<font color="blue">Conv($n$, $\frac{m}{r}$, $k$, 1)</font>, <font color="red">Conv($\frac{tm}{r}$, $\frac{m(r-1)}{r}$, 1, $\frac{m}{r}$)</font>, <font color="orange">BatchNorm($\frac{m}{r}$) $\times t$</font>|2+t|$wh\frac{m}{r}(nk^2+t(r+1))$|
+|**GroupNL Conv**  |<font color="blue">Conv($n$, $\frac{m}{r}$, $k$, 1)</font>     |1|$wh\frac{m}{r}nk^2$ |
 |Depthwise Conv       |<font color="blue">Conv($n$, $n$, $k$, $n$)</font>     |1|$whn^2k^2\frac{1}{n}$|
-|GroupNL Conv (Sparse)         |<font color="blue">Conv($n$, $\frac{n}{r}$, $k$, $\xi$)</font>     |1|$whn^2k^2\frac{1}{r\xi}$|
+|**GroupNL Conv (Sparse)** |<font color="blue">Conv($n$, $\frac{n}{r}$, $k$, $\xi$)</font>     |1|$whn^2k^2\frac{1}{r\xi}$|
 
-For the Convolution with Conv($n$, $m$, $k$, $g$), height is $h$, width is $w$, the No. of groups is $g$.<br>
+For the Convolutions with Conv($n$, $m$, $k$, $g$), height is $h$, width is $w$, the No. of groups is $g$.<br>
 For Ghost/SineFM/GroupNL Conv, $r$ is reduction ratio. <br>
 For Ghost Conv, $d$ is the kernel size of cheap Conv. <br>
 For GroupNL Conv (Sparse), $\xi$=Gcd($n$, $\frac{n}{r}$) is the No. of groups.
+
+**Our approach can achieve the performance of standard Conv with only the cost of a single seed Conv operation (i.e., Conv($n$, $\frac{m}{r}$, $k$, 1)).**
 
 ## Environment
 
