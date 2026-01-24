@@ -1,12 +1,51 @@
 # GroupNL: Low-Resource and Robust CNN Design over Cloud and Device
 GroupNL: Low-Resource and Robust CNN Design over Cloud and Device [IEEE TMC 2026]
 
-Source code will be released later.
+Compared with [Ghost Conv](https://arxiv.org/abs/1911.11907) and [Seed Feature Maps-based (SineFM) Conv](http://hal.cse.msu.edu/papers/seed-feature-map-leo-satellite-remote-sensing/), GroupNL Conv generates partial feature maps without using extra cheap Conv and BN, which only uses a seed Conv with the data-agnostic and hyperparameters-fixed *Nonlinear Transformation Functions* (i.e., Sinusoidal func) and some lightweight *Tensor Manipulation Operators* like torch.cat, torch.split, and torch.repeat.
 
+GroupNL Conv and GroupNL Conv (Sparse) can serve as the **robust alternatives** of standard Conv and depthwise Conv in [Corrupted data](https://github.com/hendrycks/robustness), respectively.<br>
+GroupNL Conv and GroupNL Conv (Sparse) also achieves a **comparable performance** to Standard Conv and depthwise Conv on standard datasets (e.g., ImageNet-1K) while consuming **fewer on-device resources** (see [our paper in TMC](https://doi.org/10.1109/TMC.2026.3655770)).
+
+|Method | nn.Module| #Ops | #FLOPs |
+|------------------|----------------------|------|--------|
+|Standard Conv      |Conv($n$, $m$, $k$, 1)    | 1 | $whmnk^2$|
+|[Mono Conv](https://github.com/evoxlos/mono-cnn-pytorch)      |<font color="blue">Conv($n$, $m$, $k$, 1)</font>     |1 | $whmnk^2$|
+|[Ghost Conv](https://arxiv.org/abs/1911.11907)        |<font color="blue">Conv($n$, $\frac{m}{r}$, $k$, 1)</font>, <font color="red">Conv($\frac{m}{r}$, $\frac{m(r-1)}{r}$, $d$, $\frac{m}{r}$)</font>    | 2 |$wh\frac{m}{r}(nk^2+(r−1)d^2)$ |
+|[SineFM Conv](http://hal.cse.msu.edu/papers/seed-feature-map-leo-satellite-remote-sensing/)           |<font color="blue">Conv($n$, $\frac{m}{r}$, $k$, 1)</font>, <font color="red">Conv($\frac{tm}{r}$, $\frac{m(r-1)}{r}$, 1, $\frac{m}{r}$)</font>, <font color="orange">BN($\frac{m}{r}$) $\times t$</font>|2+t|$wh\frac{m}{r}(nk^2+t(r+1))$|
+|GroupNL Conv   |<font color="blue">Conv($n$, $\frac{m}{r}$, $k$, 1)</font>     |1|$wh\frac{m}{r}nk^2$ |
+|Depthwise Conv       |<font color="blue">Conv($n$, $n$, $k$, $n$)</font>     |1|$whn^2k^2\frac{1}{n}$|
+|GroupNL Conv (Sparse)         |<font color="blue">Conv($n$, $\frac{n}{r}$, $k$, $\xi$)</font>     |1|$whn^2k^2\frac{1}{r\xi}$|
+
+For the Convolution with Conv($n$, $m$, $k$, $g$), height is $h$, width is $w$, the No. of groups is $g$.<br>
+For Ghost/SineFM/GroupNL Conv, $r$ is reduction ratio. <br>
+For Ghost Conv, $d$ is the kernel size of cheap Conv. <br>
+For GroupNL Conv (Sparse), $\xi$=Gcd($n$, $\frac{n}{r}$) is the No. of groups.
+
+## Environment
+
+Python >= 3.8, PyTorch >= 1.10, but not strictly required
+
+## Datasets
+
+[ImageNet-1K](https://huggingface.co/datasets/ILSVRC/imagenet-1k), and [ImageNet-C](https://github.com/hendrycks/robustness)
+
+## Training
+
+```bash
+
+```
+
+## Validation
+
+```bash
+
+```
 
 ## Publication
 
-Chuntao Ding, Jianhang Xie, Junna Zhang, Salman Raza, Shangguang Wang, Jiannong Cao, “GroupNL: Low-Resource and Robust CNN Design over Cloud and Device,” ***IEEE Transactions on Mobile Computing***, Accepted, 2026.
+Chuntao Ding<sup>#</sup>, Jianhang Xie<sup>#,</sup>\*, Junna Zhang\*, Salman Raza, Shangguang Wang, Jiannong Cao, “GroupNL: Low-Resource and Robust CNN Design over Cloud and Device,” ***IEEE Transactions on Mobile Computing***, Accepted, 2026.
+
+#: Co-first author; \*: Corr. author.
 
 URL: [DOI](https://doi.org/10.1109/TMC.2026.3655770), [ArXiv](https://arxiv.org/abs/2506.12335)
 
@@ -22,3 +61,7 @@ URL: [DOI](https://doi.org/10.1109/TMC.2026.3655770), [ArXiv](https://arxiv.org/
   doi={10.1109/TMC.2026.3655770}
 }
 ```
+
+## Acknowledgement
+
+The implementation is built on top of https://github.com/huggingface/pytorch-image-models
