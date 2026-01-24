@@ -1,10 +1,15 @@
 # GroupNL: Low-Resource and Robust CNN Design over Cloud and Device
 GroupNL: Low-Resource and Robust CNN Design over Cloud and Device [IEEE TMC 2026]
 
-Compared with [Ghost Conv](https://arxiv.org/abs/1911.11907) and [Seed Feature Maps-based (SineFM) Conv](http://hal.cse.msu.edu/papers/seed-feature-map-leo-satellite-remote-sensing/), GroupNL Conv generates partial feature maps without using extra cheap Conv and BN, which only uses a seed Conv with the data-agnostic and hyperparameters-fixed *Nonlinear Transformation Functions* (i.e., Sinusoidal func) and some lightweight *Tensor Manipulation Operators* like torch.cat, torch.split, and torch.repeat.
+## Overview
+Compared with [Ghost Conv](https://arxiv.org/abs/1911.11907) and [Seed Feature Maps-based (SineFM) Conv](http://hal.cse.msu.edu/papers/seed-feature-map-leo-satellite-remote-sensing/), the proposed **GroupNL Conv** generates partial feature maps without using extra cheap Conv and BN, which only uses a seed Conv with the data-agnostic and hyperparameters-fixed *Nonlinear Transformation Functions (NLFs)* (i.e., Sinusoidal func) and some lightweight *Tensor Manipulation Operators* like torch.cat, torch.split, and torch.repeat.
 
 GroupNL Conv and GroupNL Conv (Sparse) can serve as the **robust alternatives** of standard Conv and depthwise Conv in [Corrupted data](https://github.com/hendrycks/robustness), respectively.<br>
-GroupNL Conv and GroupNL Conv (Sparse) also achieves a **comparable performance** to Standard Conv and depthwise Conv on standard datasets (e.g., ImageNet-1K) while consuming **fewer on-device resources** (see [our paper in TMC](https://doi.org/10.1109/TMC.2026.3655770)).
+GroupNL Conv and GroupNL Conv (Sparse) also achieves a **comparable performance** to Standard Conv and depthwise Conv on standard datasets (e.g., ImageNet-1K) while consuming **fewer on-device resources** (see [our paper in IEEE TMC](https://doi.org/10.1109/TMC.2026.3655770)).
+
+![image](groupnl_conv_example.png)
+
+## Comparison with Standard Convs
 
 |Method | nn.Module| #Ops | #FLOPs |
 |------------------|----------------------|------|--------|
@@ -27,18 +32,52 @@ Python >= 3.8, PyTorch >= 1.10, but not strictly required
 
 ## Datasets
 
-[ImageNet-1K](https://huggingface.co/datasets/ILSVRC/imagenet-1k), and [ImageNet-C](https://github.com/hendrycks/robustness)
+The standard dataset [ImageNet-1K](https://huggingface.co/datasets/ILSVRC/imagenet-1k), and corrupted dataset [ImageNet-C](https://github.com/hendrycks/robustness)
 
 ## Training
 
-```bash
+The path of dataset is set by two args --data-dir and --machine in ddp_train.py (see line 363-365). <br>
+These scripts serve for the 8-RTX4090 GPUs DDP training with PyTorch.
 
+*GroupNL ResNet-101*
+```bash
+python3 -m torch.distributed.launch --nproc_per_node=8 --master_port 25335 ddp_train.py --model gnl_resnet101 --batch-size 128 --epochs 300 --drop-path 0.1 --amp --output ./your/output/path
+```
+
+*GroupNL MobileNet-V3*
+```bash
+python3 -m torch.distributed.launch --nproc_per_node=8 --master_port 25335 ddp_train.py --model mobilenetv3_gnl_large_100 -b 128 --sched step --epochs 600 --decay-epochs 2.4 --decay-rate .973 --opt rmsproptf --opt-eps .001 -j 8 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-path 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --amp --lr .064 --lr-noise 0.42 0.9 --output ./your/output/path
+```
+
+*GroupNL MobileNet-V2*
+```bash
+python3 -m torch.distributed.launch --nproc_per_node=8 --master_port 25335 ddp_train.py --model mobilenetv2_gnl_100 -b 128 --sched step --epochs 450 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 -j 8 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-path 0.2  --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --amp --lr .064 --output ./your/output/path
+```
+
+*GroupNL EfficientNet-Lite0*
+```bash
+python3 -m torch.distributed.launch --nproc_per_node=8 --master_port 25335 ddp_train.py --model efficientnet_gnl_lite0 --batch-size 128 --sched step --epochs 450 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 -j 8 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-path 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --amp --lr .064 --output ./your/output/path
+```
+
+*GroupNL EfficientNetV2-Small*
+```bash
+python3 -m torch.distributed.launch --nproc_per_node=8 --master_port 25335 ddp_train.py --model efficientnetv2_gnl_s -b 128 --sched step --epochs 450 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 -j 8 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-path 0.2  --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --amp --lr .064 --output ./your/output/path
+```
+
+*GroupNL EfficientNet-ES*
+```bash
+python3 -m torch.distributed.launch --nproc_per_node=8 --master_port 25335 ddp_train.py --model efficientnet_gnl_es -b 128 --sched step --epochs 450 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 -j 8 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-path 0.2  --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --amp --lr .064 --output ./your/output/path
 ```
 
 ## Validation
 
-```bash
+The val_imagenet_c.py will validate the last epoch's checkpoint from training in ./your/checkpoint/dir/path. <br>
+The path of ImageNet-C dataset is set by the args --data-dir in val_imagenet_c.py. <br>
+Example:
 
+*GroupNL EfficientNet-ES in ImageNet-C*
+```bash
+python3 val_imagenet_c.py --model efficientnet_gnl_es --checkpoint ./your/checkpoint/dir/path --output ./your/output/path --output-dir ./your/imgc/output/path
 ```
 
 ## Publication
@@ -64,4 +103,5 @@ URL: [DOI](https://doi.org/10.1109/TMC.2026.3655770), [ArXiv](https://arxiv.org/
 
 ## Acknowledgement
 
-The implementation is built on top of https://github.com/huggingface/pytorch-image-models
+The implementation is built on top of https://github.com/huggingface/pytorch-image-models <br>
+The training scripts references https://huggingface.co/docs/timm/training_script
